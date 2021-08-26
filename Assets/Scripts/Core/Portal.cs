@@ -1,4 +1,4 @@
-﻿using System.Collections;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -19,6 +19,9 @@ public class Portal : MonoBehaviour {
     Material firstRecursionMat;
     List<PortalTraveller> trackedTravellers;
     MeshFilter screenMeshFilter;
+    Collider portalCollider;
+    string portalIdentifier;
+    bool isVisible;
 
     void Awake () {
         playerCam = Camera.main;
@@ -27,12 +30,40 @@ public class Portal : MonoBehaviour {
         trackedTravellers = new List<PortalTraveller> ();
         screenMeshFilter = screen.GetComponent<MeshFilter> ();
         screen.material.SetInt ("displayMask", 1);
+        portalIdentifier = gameObject.name;
+        print(portalIdentifier);
+        portalCollider = GetComponent<Collider>();
+        isVisible = false;
+    }
+
+    bool isPointedAt(){
+        return false;
     }
 
     void LateUpdate () {
         HandleTravellers ();
     }
 
+    public string getPortalIdentifier(){
+        return portalIdentifier;
+    }
+
+    public Camera getPortalCam(){
+        return portalCam;
+    }
+
+    public Camera getPlayerCam(){
+        return playerCam;
+    }
+
+    public void setPlayerCam(Camera cam){
+        playerCam = cam;
+    }
+
+    public bool getVisibleState(){
+        return isVisible;
+    }
+    
     void HandleTravellers () {
 
         for (int i = 0; i < trackedTravellers.Count; i++) {
@@ -69,13 +100,34 @@ public class Portal : MonoBehaviour {
         }
     }
 
+    public void checkVisibility(){
+        isVisible = false;
+        if(!CameraUtility.VisibleFromCamera(screen, Camera.main)){ 
+           return;
+        }
+        linkedPortal.playerCam = Camera.main;
+        playerCam = Camera.main;
+        isVisible = true;
+    }
+
     // Manually render the camera attached to this portal
     // Called after PrePortalRender, and before PostPortalRender
-    public void Render () {
-
-        // Skip rendering the view from this portal if player is not looking at the linked portal
-        if (!CameraUtility.VisibleFromCamera (linkedPortal.screen, playerCam)) {
-            return;
+    public void Render (Portal[] portals, GameObject player) {     
+        //Check if the portal is initally outside of the player's frustum 
+        if(!isVisible){
+            //Check all portals for visible portals.
+            foreach(Portal portal in portals){
+                //Check if portal is visible to begin with.
+                if(portal.getVisibleState()){
+                    //Is this portal's screen visible by the visible portal's linked portal?
+                    if(CameraUtility.VisibleFromCamera(screen, portal.linkedPortal.getPortalCam()) 
+                        && (portal.linkedPortal.getPortalIdentifier() != portalIdentifier)){
+                        // If so, change the player camera of the portal that is being observed to the
+                        // linked portal's portal cam.
+                        linkedPortal.setPlayerCam(portal.linkedPortal.getPortalCam());
+                    }
+                }
+            }
         }
 
         CreateViewTexture ();

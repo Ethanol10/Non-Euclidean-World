@@ -1,26 +1,62 @@
-﻿using UnityEngine;
+﻿using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
 
 public class MainCamera : MonoBehaviour {
 
     Portal[] portals;
+    GameObject player;
 
     void Awake () {
         portals = FindObjectsOfType<Portal> ();
+        GameObject[] returnedPlayerArray;
+        returnedPlayerArray = GameObject.FindGameObjectsWithTag("Player");
+        player = returnedPlayerArray[0];
     }
 
     void OnPreCull () {
+        List<Portal> portalsList = new List<Portal>();
+        List<float> portalDistances = new List<float>();
 
         for (int i = 0; i < portals.Length; i++) {
             portals[i].PrePortalRender ();
         }
+
         for (int i = 0; i < portals.Length; i++) {
-            portals[i].Render ();
+            Portal portal = portals[i];
+            portalDistances.Add(Vector3.Distance(player.transform.position, portal.transform.position));
+            portalsList.Add(portal);
+            // portals[i].Render (portals, player);
+        }
+
+        for (int i = 0; i < portalDistances.Count - 1; i++){
+            for (int j = 0; j < portalDistances.Count - i - 1; j++){
+                if (portalDistances[j] < portalDistances[j + 1]){
+                    float temp = portalDistances[j];    
+                    Portal transformTemp = portalsList[j];
+
+                    portalDistances[j] = portalDistances[j + 1];
+                    portalsList[j] = portalsList[j + 1];
+
+                    portalDistances[j + 1] = temp;
+                    portalsList[j + 1] = transformTemp;
+                }
+            }
+        }
+
+        print("NEW FRAME");
+        //Check the visibility of the portal from the main camera.
+        for (int i = 0; i < portalsList.Count; i++) {
+            portalsList[i].checkVisibility();
+        }
+
+        for (int i = 0; i < portalsList.Count; i++) {
+            portalsList[i].Render(portals, player);
         }
 
         for (int i = 0; i < portals.Length; i++) {
             portals[i].PostPortalRender ();
         }
-
     }
 
 }
