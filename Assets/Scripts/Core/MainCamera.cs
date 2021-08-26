@@ -17,11 +17,13 @@ public class MainCamera : MonoBehaviour {
     void OnPreCull () {
         List<Portal> portalsList = new List<Portal>();
         List<float> portalDistances = new List<float>();
-
+        
+        //Pre-render
         for (int i = 0; i < portals.Length; i++) {
             portals[i].PrePortalRender ();
         }
 
+        //Need to sort by distance from player.
         for (int i = 0; i < portals.Length; i++) {
             Portal portal = portals[i];
             portalDistances.Add(Vector3.Distance(player.transform.position, portal.transform.position));
@@ -44,7 +46,6 @@ public class MainCamera : MonoBehaviour {
             }
         }
 
-        print("NEW FRAME");
         //Check the visibility of the portal from the main camera.
         for (int i = 0; i < portalsList.Count; i++) {
             portalsList[i].checkVisibility();
