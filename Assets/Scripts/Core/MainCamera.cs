@@ -8,7 +8,7 @@ public class MainCamera : MonoBehaviour {
     GameObject player;
 
     void Awake () {
-        portals = FindObjectsOfType<Portal> ();
+        portals = FindObjectsOfType<Portal>();
         GameObject[] returnedPlayerArray;
         returnedPlayerArray = GameObject.FindGameObjectsWithTag("Player");
         player = returnedPlayerArray[0];
@@ -30,7 +30,8 @@ public class MainCamera : MonoBehaviour {
             portalsList.Add(portal);
             // portals[i].Render (portals, player);
         }
-
+        
+        //Sort to figure out which distance is smaller and put that at the back of the list to render.
         for (int i = 0; i < portalDistances.Count - 1; i++){
             for (int j = 0; j < portalDistances.Count - i - 1; j++){
                 if (portalDistances[j] < portalDistances[j + 1]){
@@ -51,10 +52,12 @@ public class MainCamera : MonoBehaviour {
             portalsList[i].checkVisibility();
         }
 
+        //render portal
         for (int i = 0; i < portalsList.Count; i++) {
             portalsList[i].Render(portals, player);
         }
 
+        //Post Render
         for (int i = 0; i < portals.Length; i++) {
             portals[i].PostPortalRender ();
         }

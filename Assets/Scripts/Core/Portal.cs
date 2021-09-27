@@ -7,6 +7,7 @@ public class Portal : MonoBehaviour {
     public Portal linkedPortal;
     public MeshRenderer screen;
     public int recursionLimit = 5;
+    public bool allowTravelling = true;
 
     [Header ("Advanced Settings")]
     public float nearClipOffset = 0.05f;
@@ -19,7 +20,7 @@ public class Portal : MonoBehaviour {
     Material firstRecursionMat;
     List<PortalTraveller> trackedTravellers;
     MeshFilter screenMeshFilter;
-    Collider portalCollider;
+    BoxCollider portalCollider;
     string portalIdentifier;
     bool isVisible;
 
@@ -31,9 +32,12 @@ public class Portal : MonoBehaviour {
         screenMeshFilter = screen.GetComponent<MeshFilter> ();
         screen.material.SetInt ("displayMask", 1);
         portalIdentifier = gameObject.name;
-        print(portalIdentifier);
-        portalCollider = GetComponent<Collider>();
+        portalCollider = GetComponent<BoxCollider>();
         isVisible = false;
+        if(!allowTravelling){
+            portalCollider.isTrigger = false;
+            portalCollider.size = new Vector3(portalCollider.size.x, portalCollider.size.y, 0.01f);
+        }
     }
 
     bool isPointedAt(){
@@ -41,7 +45,9 @@ public class Portal : MonoBehaviour {
     }
 
     void LateUpdate () {
-        HandleTravellers ();
+        if(allowTravelling){
+            HandleTravellers ();
+        }
     }
 
     public string getPortalIdentifier(){
@@ -105,6 +111,7 @@ public class Portal : MonoBehaviour {
         if(!CameraUtility.VisibleFromCamera(screen, Camera.main)){ 
            return;
         }
+        //print(portalIdentifier + " is seen by CameraMain");
         linkedPortal.playerCam = Camera.main;
         playerCam = Camera.main;
         isVisible = true;
@@ -161,7 +168,9 @@ public class Portal : MonoBehaviour {
         for (int i = startIndex; i < recursionLimit; i++) {
             portalCam.transform.SetPositionAndRotation (renderPositions[i], renderRotations[i]);
             SetNearClipPlane ();
-            HandleClipping ();
+            if(allowTravelling){
+                HandleClipping ();
+            }
             portalCam.Render ();
 
             if (i == startIndex) {
@@ -230,9 +239,13 @@ public class Portal : MonoBehaviour {
     // Called once all portals have been rendered, but before the player camera renders
     public void PostPortalRender () {
         foreach (var traveller in trackedTravellers) {
-            UpdateSliceParams (traveller);
+            if(allowTravelling){
+                UpdateSliceParams (traveller);
+            }
         }
-        ProtectScreenFromClipping (playerCam.transform.position);
+        if(allowTravelling){
+           ProtectScreenFromClipping (playerCam.transform.position);
+        }
     }
     void CreateViewTexture () {
         if (viewTexture == null || viewTexture.width != Screen.width || viewTexture.height != Screen.height) {
@@ -249,18 +262,20 @@ public class Portal : MonoBehaviour {
 
     // Sets the thickness of the portal screen so as not to clip with camera near plane when player goes through
     float ProtectScreenFromClipping (Vector3 viewPoint) {
-        float halfHeight = playerCam.nearClipPlane * Mathf.Tan (playerCam.fieldOfView * 0.5f * Mathf.Deg2Rad);
-        float halfWidth = halfHeight * playerCam.aspect;
-        float dstToNearClipPlaneCorner = new Vector3 (halfWidth, halfHeight, playerCam.nearClipPlane).magnitude;
+        //Since the playerCam is expecting the main camera, we replace all instances of playerCam with a dummyMainCamera for now.
+        Camera dummyMainCamera = Camera.main;
+        float halfHeight = dummyMainCamera.nearClipPlane * Mathf.Tan (dummyMainCamera.fieldOfView * 0.5f * Mathf.Deg2Rad);
+        float halfWidth = halfHeight * dummyMainCamera.aspect;
+        float dstToNearClipPlaneCorner = new Vector3 (halfWidth, halfHeight, dummyMainCamera.nearClipPlane).magnitude;
         float screenThickness = dstToNearClipPlaneCorner;
-
+        
         Transform screenT = screen.transform;
         bool camFacingSameDirAsPortal = Vector3.Dot (transform.forward, transform.position - viewPoint) > 0;
         screenT.localScale = new Vector3 (screenT.localScale.x, screenT.localScale.y, screenThickness);
         screenT.localPosition = Vector3.forward * screenThickness * ((camFacingSameDirAsPortal) ? 0.5f : -0.5f);
         return screenThickness;
     }
-
+ 
     void UpdateSliceParams (PortalTraveller traveller) {
         // Calculate slice normal
         int side = SideOfPortal (traveller.transform.position);

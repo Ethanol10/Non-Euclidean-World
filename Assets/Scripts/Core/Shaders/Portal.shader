@@ -43,7 +43,7 @@
 
             fixed4 frag (v2f i) : SV_Target
             {
-                float2 uv = i.screenPos.xy / i.screenPos.w;
+                float2 uv = (i.screenPos.xy / i.screenPos.w);
                 fixed4 portalCol = tex2D(_MainTex, uv);
                 return portalCol * displayMask + _InactiveColour * (1-displayMask);
             }
