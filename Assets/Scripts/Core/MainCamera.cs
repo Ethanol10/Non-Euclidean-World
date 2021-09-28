@@ -54,7 +54,7 @@ public class MainCamera : MonoBehaviour {
 
         //render portal
         for (int i = 0; i < portalsList.Count; i++) {
-            portalsList[i].Render(portals, player);
+            portalsList[i].Render(portalsList, player);
         }
 
         //Post Render

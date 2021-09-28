@@ -119,7 +119,7 @@ public class Portal : MonoBehaviour {
 
     // Manually render the camera attached to this portal
     // Called after PrePortalRender, and before PostPortalRender
-    public void Render (Portal[] portals, GameObject player) {     
+    public void Render (List<Portal> portals, GameObject player) {     
         //Check if the portal is initally outside of the player's frustum 
         if(!isVisible){
             //Check all portals for visible portals.
