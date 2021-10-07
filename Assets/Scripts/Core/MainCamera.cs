@@ -4,11 +4,13 @@ using UnityEngine;
 
 public class MainCamera : MonoBehaviour {
 
-    Portal[] portals;
+    List<Portal> portals;
     GameObject player;
 
     void Awake () {
-        portals = FindObjectsOfType<Portal>();
+        portals = new List<Portal>();
+        resetPortalIdentification();
+        // portals = FindObjectsOfType<Portal>();
         GameObject[] returnedPlayerArray;
         returnedPlayerArray = GameObject.FindGameObjectsWithTag("Player");
         player = returnedPlayerArray[0];
@@ -17,14 +19,16 @@ public class MainCamera : MonoBehaviour {
     void OnPreCull () {
         List<Portal> portalsList = new List<Portal>();
         List<float> portalDistances = new List<float>();
+        portalsList.Clear();
+        portalDistances.Clear();
         
         //Pre-render
-        for (int i = 0; i < portals.Length; i++) {
+        for (int i = 0; i < portals.Count; i++) {
             portals[i].PrePortalRender ();
         }
 
         //Need to sort by distance from player.
-        for (int i = 0; i < portals.Length; i++) {
+        for (int i = 0; i < portals.Count; i++) {
             Portal portal = portals[i];
             portalDistances.Add(Vector3.Distance(player.transform.position, portal.transform.position));
             portalsList.Add(portal);
@@ -54,13 +58,21 @@ public class MainCamera : MonoBehaviour {
 
         //render portal
         for (int i = 0; i < portalsList.Count; i++) {
-            portalsList[i].Render(portalsList, player);
+            portalsList[i].Render(portalsList);
         }
 
         //Post Render
-        for (int i = 0; i < portals.Length; i++) {
+        for (int i = 0; i < portals.Count; i++) {
             portals[i].PostPortalRender ();
         }
     }
 
-}
+    public void resetPortalIdentification(){
+        Portal[] portalArr;
+        portals.Clear();    
+        portalArr = FindObjectsOfType<Portal>();
+        for(int i = 0; i < portalArr.Length; i++){
+            portals.Add(portalArr[i]);
+        }
+    }
+} 

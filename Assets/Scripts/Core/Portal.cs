@@ -8,6 +8,7 @@ public class Portal : MonoBehaviour {
     public MeshRenderer screen;
     public int recursionLimit = 5;
     public bool allowTravelling = true;
+    public CloningScript cloningBox;
 
     [Header ("Advanced Settings")]
     public float nearClipOffset = 0.05f;
@@ -23,6 +24,8 @@ public class Portal : MonoBehaviour {
     BoxCollider portalCollider;
     string portalIdentifier;
     bool isVisible;
+    bool isCloned;
+    Portal clonePortal;
 
     void Awake () {
         playerCam = Camera.main;
@@ -34,6 +37,7 @@ public class Portal : MonoBehaviour {
         portalIdentifier = gameObject.name;
         portalCollider = GetComponent<BoxCollider>();
         isVisible = false;
+        isCloned = false;
         if(!allowTravelling){
             portalCollider.isTrigger = false;
             portalCollider.size = new Vector3(portalCollider.size.x, portalCollider.size.y, 0.01f);
@@ -48,6 +52,31 @@ public class Portal : MonoBehaviour {
         if(allowTravelling){
             HandleTravellers ();
         }
+    }
+
+    public Portal getClonePortal(){
+        return clonePortal;
+    }
+
+    public void setClonePortal(Portal newClone){
+        clonePortal = newClone;
+    }
+
+    public bool getClonedState(){
+        return isCloned;
+    }
+
+    public bool setClonedState(){
+        isCloned = !isCloned;    
+        return isCloned;
+    }
+
+    public RenderTexture getViewTexture(){
+        return viewTexture;
+    }
+
+    public void setViewTexture(RenderTexture newViewTex){
+        viewTexture = newViewTex;
     }
 
     public string getPortalIdentifier(){
@@ -119,9 +148,11 @@ public class Portal : MonoBehaviour {
 
     // Manually render the camera attached to this portal
     // Called after PrePortalRender, and before PostPortalRender
-    public void Render (List<Portal> portals, GameObject player) {     
+    public void Render (List<Portal> portals) {     
+        //If my linkedPortal is a clone, I need to get the clone's camera and take that image instead of the correct output clone.
+
         //Check if the portal is initally outside of the player's frustum 
-        if(!isVisible){
+        if(!isVisible && portals != null){
             //Check all portals for visible portals.
             foreach(Portal portal in portals){
                 //Check if portal is visible to begin with.
@@ -137,7 +168,7 @@ public class Portal : MonoBehaviour {
             }
         }
 
-        CreateViewTexture ();
+        CreateViewTexture();
 
         var localToWorldMatrix = playerCam.transform.localToWorldMatrix;
         var renderPositions = new Vector3[recursionLimit];
@@ -180,6 +211,11 @@ public class Portal : MonoBehaviour {
 
         // Unhide objects hidden at start of render
         screen.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.On;
+    }
+
+    public void CloneRender(){
+        screen.material.SetTexture ("_MainTex", viewTexture);
+        screen.material.SetInt ("displayMask", 1);
     }
 
     void HandleClipping () {
@@ -254,7 +290,13 @@ public class Portal : MonoBehaviour {
             }
             viewTexture = new RenderTexture (Screen.width, Screen.height, 0);
             // Render the view from the portal camera to the view texture
-            portalCam.targetTexture = viewTexture;
+            //If the camera is cloned, we want to take the view from the otherside.
+            if(cloningBox != null){
+                clonePortal.getPortalCam().targetTexture = viewTexture;
+            }
+            else{
+                portalCam.targetTexture = viewTexture;
+            }
             // Display the view texture on the screen of the linked portal
             linkedPortal.screen.material.SetTexture ("_MainTex", viewTexture);
         }

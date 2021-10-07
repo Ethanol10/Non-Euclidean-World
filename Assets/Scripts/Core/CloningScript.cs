@@ -8,17 +8,25 @@ public class CloningScript : MonoBehaviour
     public GameObject samplePortal;
     public GameObject samplePlayer;
     public GameObject sampleWindow;
+    public MainCamera MainCamera;
+    public Portal targetScene;
 
     //Custom offset
     public Vector3 offset = new Vector3(500, 500, 500);
+    private Vector3 scaler;
 
     //Parent of all objects within the collider.
+    private Vector3 originalScale;
     private GameObject clonedScene;
     private GameObject objectContainer;
     private List<ClonedObject> cloneObjectList;
     private MeshRenderer cloningBoxMeshRenderer;
 
     // Start is called before the first frame update
+    void Awake(){
+        scaler = new Vector3(1, 1, targetScene.gameObject.transform.localScale.x);
+    }
+
     void Start()
     {
         //Make debug box invisible.
@@ -30,6 +38,8 @@ public class CloningScript : MonoBehaviour
         clonedScene.transform.parent = gameObject.transform;
         objectContainer = new GameObject("Cloned Scene object list");
         objectContainer.transform.parent = gameObject.transform;
+        originalScale = clonedScene.transform.localScale;
+        //ScaleBack();
 
         //Instantiate clonedobject list.
         cloneObjectList = new List<ClonedObject>();
@@ -38,11 +48,18 @@ public class CloningScript : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        
+
+    }
+
+    public void setScaler(Vector3 newScaler){
+        print("newScaler: " + newScaler);
+        scaler = newScaler;
+        print("scaler: " + scaler);
     }
 
     void OnTriggerEnter(Collider collidedObject){
         bool found = false;
+        print("onTrigger Scaler: " + scaler);
 
         foreach(ClonedObject cloneOb in cloneObjectList){
             if( (cloneOb.reference.GetInstanceID() == collidedObject.gameObject.GetInstanceID())
@@ -53,6 +70,7 @@ public class CloningScript : MonoBehaviour
 
         //We don't want to clone portal frames.
         if(!found && (collidedObject.gameObject.tag != "PortalFrame")){
+            ScaleToOriginal();
             //Container for object
             GameObject container = new GameObject(collidedObject.gameObject.name);
             container.transform.parent = objectContainer.transform;
@@ -68,7 +86,7 @@ public class CloningScript : MonoBehaviour
                     newClone.clone = Instantiate(samplePortal, clonedScene.transform);
                     break;
                 case "Player":
-                    newClone.clone = Instantiate(samplePlayer, clonedScene.transform);
+                    newClone.clone = Instantiate(samplePlayer);
                     break;
                 case "Window":
                     newClone.clone = Instantiate(sampleWindow, clonedScene.transform);
@@ -78,11 +96,12 @@ public class CloningScript : MonoBehaviour
                     break;
             }
 
-            newClone.clone.transform.position = newClone.reference.transform.position + offset;
             newClone.clone.transform.localScale = newClone.reference.transform.localScale;
             newClone.clone.transform.rotation = newClone.reference.transform.rotation;
+            newClone.clone.transform.position = newClone.reference.transform.position + offset;
             newClone.offset = offset;
             cloneObjectList.Add(newClone);
+            ScaleBack();
         }
     }
     
@@ -94,5 +113,13 @@ public class CloningScript : MonoBehaviour
                 i = cloneObjectList.Count;
             }
         }
+    }
+
+    void ScaleToOriginal(){
+        clonedScene.transform.localScale = originalScale;
+    }
+
+    void ScaleBack(){
+        clonedScene.transform.localScale = Vector3.Scale(clonedScene.transform.localScale, scaler);
     }
 }
