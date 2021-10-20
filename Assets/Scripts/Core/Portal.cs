@@ -26,9 +26,11 @@ public class Portal : MonoBehaviour {
     bool isVisible;
     bool isCloned;
     Portal clonePortal;
+    GameObject dummyCloneTransform;
 
     void Awake () {
         playerCam = Camera.main;
+        dummyCloneTransform = null;
         portalCam = GetComponentInChildren<Camera> ();
         portalCam.enabled = false;
         trackedTravellers = new List<PortalTraveller> ();
@@ -54,6 +56,16 @@ public class Portal : MonoBehaviour {
         }
     }
 
+    public void setDummyObject(GameObject dummyObject){
+        dummyCloneTransform = dummyObject;
+        dummyCloneTransform.transform.position = gameObject.transform.position;
+        dummyCloneTransform.transform.rotation = gameObject.transform.rotation;
+    }
+
+    public Transform getDummyObjectTransform(){
+        return dummyCloneTransform.transform;
+    }
+
     public Portal getClonePortal(){
         return clonePortal;
     }
@@ -67,7 +79,7 @@ public class Portal : MonoBehaviour {
     }
 
     public bool setClonedState(){
-        isCloned = !isCloned;    
+        isCloned = !isCloned;
         return isCloned;
     }
 
@@ -142,6 +154,9 @@ public class Portal : MonoBehaviour {
         }
         //print(portalIdentifier + " is seen by CameraMain");
         linkedPortal.playerCam = Camera.main;
+        if(gameObject.tag == "Window"){
+            linkedPortal.clonePortal.setPlayerCam(Camera.main);
+        }
         playerCam = Camera.main;
         isVisible = true;
     }
@@ -150,7 +165,17 @@ public class Portal : MonoBehaviour {
     // Called after PrePortalRender, and before PostPortalRender
     public void Render (List<Portal> portals) {     
         //If my linkedPortal is a clone, I need to get the clone's camera and take that image instead of the correct output clone.
-
+        // if(portals != null){
+        //     foreach(Portal portal in portals){
+        //         if(CameraUtility.VisibleFromCamera(screen, portal.linkedPortal.getPortalCam()) &&
+        //             !CameraUtility.VisibleFromCamera(screen, Camera.main)){
+                    
+        //             print("portalTriggered: " + portal.getPortalIdentifier());
+        //             print("linkedPortalConverted: " + linkedPortal.getPortalIdentifier());
+        //             linkedPortal.setPlayerCam(portal.linkedPortal.getPortalCam());
+        //         }
+        //     }
+        // }
         //Check if the portal is initally outside of the player's frustum 
         if(!isVisible && portals != null){
             //Check all portals for visible portals.
@@ -163,13 +188,16 @@ public class Portal : MonoBehaviour {
                         // If so, change the player camera of the portal that is being observed to the
                         // linked portal's portal cam.
                         linkedPortal.setPlayerCam(portal.linkedPortal.getPortalCam());
+                        if(gameObject.tag == "Window"){
+                            linkedPortal.clonePortal.setPlayerCam(portal.linkedPortal.getPortalCam());
+                        }
                     }
                 }
             }
         }
 
         CreateViewTexture();
-
+        
         var localToWorldMatrix = playerCam.transform.localToWorldMatrix;
         var renderPositions = new Vector3[recursionLimit];
         var renderRotations = new Quaternion[recursionLimit];
@@ -183,7 +211,14 @@ public class Portal : MonoBehaviour {
                     break;
                 }
             }
-            localToWorldMatrix = transform.localToWorldMatrix * linkedPortal.transform.worldToLocalMatrix * localToWorldMatrix;
+
+            if(dummyCloneTransform != null){
+                localToWorldMatrix = dummyCloneTransform.transform.localToWorldMatrix * linkedPortal.getDummyObjectTransform().worldToLocalMatrix * localToWorldMatrix;
+            }
+            else{
+                localToWorldMatrix = transform.localToWorldMatrix * linkedPortal.transform.worldToLocalMatrix * localToWorldMatrix;
+            }
+
             int renderOrderIndex = recursionLimit - i - 1;
             renderPositions[renderOrderIndex] = localToWorldMatrix.GetColumn (3);
             renderRotations[renderOrderIndex] = localToWorldMatrix.rotation;
@@ -213,7 +248,7 @@ public class Portal : MonoBehaviour {
         screen.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.On;
     }
 
-    public void CloneRender(){
+    public void CloneSimpleRender(){
         screen.material.SetTexture ("_MainTex", viewTexture);
         screen.material.SetInt ("displayMask", 1);
     }

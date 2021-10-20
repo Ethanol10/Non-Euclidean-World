@@ -10,6 +10,7 @@ public class CloningScript : MonoBehaviour
     public GameObject sampleWindow;
     public MainCamera MainCamera;
     public Portal targetPortal;
+    public CloningScript sceneClonePair;
 
     //Custom offset
     public Vector3 offset = new Vector3(500, 500, 500);
@@ -31,7 +32,6 @@ public class CloningScript : MonoBehaviour
     void Awake(){
         scaler = new Vector3(1.0f, 1.0f, targetPortal.gameObject.transform.localScale.x);
         scalerY = targetPortal.gameObject.transform.localScale.y;
-        print(scaler);
     }
 
     void Start()
@@ -46,7 +46,6 @@ public class CloningScript : MonoBehaviour
         objectContainer = new GameObject("Cloned Scene object list");
         objectContainer.transform.parent = gameObject.transform;
         originalScale = clonedScene.transform.localScale;
-        print("originalScale " + gameObject.name + ":" + originalScale);
 
         //Instantiate clonedobject list.
         cloneObjectList = new List<ClonedObject>();
@@ -63,13 +62,16 @@ public class CloningScript : MonoBehaviour
         return clonedPortalList;
     }
 
+    public List<ClonedObject> getPairClonedPortalList(){
+        return sceneClonePair.getClonedPortalList();
+    }
+
     public void setScaler(Vector3 newScaler){
         scaler = newScaler;
     }
 
     void OnTriggerEnter(Collider collidedObject){
         bool found = false;
-        //print("onTrigger Scaler: " + scaler);
 
         foreach(ClonedObject cloneOb in cloneObjectList){
             if( (cloneOb.reference.GetInstanceID() == collidedObject.gameObject.GetInstanceID())
@@ -113,6 +115,8 @@ public class CloningScript : MonoBehaviour
             newClone.clone.transform.rotation = newClone.reference.transform.rotation;
             newClone.clone.transform.position = newClone.reference.transform.position + offset;
             newClone.offset = offset;
+            newClone.clone.name = newClone.reference.name;
+            newClone.transform.position = newClone.clone.transform.position;
             cloneObjectList.Add(newClone);
             //Add to list of cloned portals to ensure that cloned objects can refer to an
             //updated list at all times.
@@ -120,6 +124,7 @@ public class CloningScript : MonoBehaviour
                 clonedPortalList.Add(newClone);
             }
             newClone.cloningScript = gameObject.GetComponent<CloningScript>();
+            newClone.pairCloneScript = sceneClonePair;
             ScaleBack();
         }
     }
@@ -139,7 +144,6 @@ public class CloningScript : MonoBehaviour
     }
 
     void ScaleBack(){
-        print("ClonedScene LocalScale: " + gameObject.name + " :" + clonedScene.transform.localScale);
         clonedScene.transform.localScale = Vector3.Scale(clonedScene.transform.localScale, scaler);
     }
 }

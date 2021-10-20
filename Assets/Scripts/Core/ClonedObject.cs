@@ -8,6 +8,7 @@ public class ClonedObject : MonoBehaviour
     public GameObject reference {get; set;}
     public Vector3 offset {get; set;}
     public CloningScript cloningScript {get; set;}
+    public CloningScript pairCloneScript {get; set;}
   
     private Portal clonePortal;
     private Portal referencePortal;
@@ -22,24 +23,27 @@ public class ClonedObject : MonoBehaviour
             clonePortal = clone.GetComponent<Portal>();
             referencePortal = reference.GetComponent<Portal>();
             referencePortal.setClonedState();
-            clonePortal.setPlayerCam(Camera.main);
             clonePortal.linkedPortal = referencePortal.linkedPortal;
+            if(reference.tag == "Portal"){
+                clonePortal.setDummyObject(new GameObject(referencePortal.gameObject.name));
+            }
+            referencePortal.setClonePortal(clonePortal);
         }
     }
 
     // Update is called once per frame
     void Update()
     {
+        updateCloneRelations();
         switch(reference.tag){
             case "Player":
                 PlayerHandle();
                 break;
             case "Portal":
-                PreClonePortalRender();
+                FindWindow();
                 PortalHandle();
                 break;
             case "Window":
-                PreClonePortalRender();
                 WindowHandle();
                 break;
             default:
@@ -47,8 +51,24 @@ public class ClonedObject : MonoBehaviour
         }
     }
 
+    public void updateCloneRelations(){
+        if(reference.tag == "Portal"){
+            List<ClonedObject> listOfClonedPortals = cloningScript.getPairClonedPortalList();
+            foreach(ClonedObject portal in listOfClonedPortals){
+                if(portal.getReferencePortal().getPortalIdentifier() == referencePortal.linkedPortal.getPortalIdentifier()){
+                    clonePortal.linkedPortal = portal.getClonePortal();
+                    portal.getClonePortal().linkedPortal = clonePortal;
+                }
+            }
+        }
+    }
+
     public Portal getClonePortal(){
         return clonePortal;
+    }
+
+    public Portal getReferencePortal(){
+        return referencePortal;
     }
 
     void PlayerHandle(){
@@ -56,25 +76,20 @@ public class ClonedObject : MonoBehaviour
     }
     
     void PortalHandle(){
-        clonePortal.setViewTexture( referencePortal.linkedPortal.getViewTexture() );
-        clonePortal.CloneRender();
+        //clonePortal.setViewTexture( referencePortal.linkedPortal.getViewTexture() );
+        clonePortal.Render(null);
     }
 
     void WindowHandle(){
         clonePortal.Render(null);
     }
 
-    //Render other clone portals before rendering the clone portal viewpoint.
-    void PreClonePortalRender(){
-        if( CameraUtility.VisibleFromCamera(referencePortal.screen, Camera.main)){
-            Camera portalCamera = clonePortal.getPortalCam();
-            List<ClonedObject> listOfClonedPortals = cloningScript.getClonedPortalList();
-            foreach(ClonedObject portal in listOfClonedPortals){
-                if( CameraUtility.VisibleFromCamera(portal.getClonePortal().screen, portalCamera) ){
-                    print("I'm: " + portal.getClonePortal().linkedPortal.getPortalIdentifier());
-                    portal.getClonePortal().linkedPortal.setPlayerCam(portalCamera);
-                    portal.getClonePortal().Render(null);
-                }
+    void FindWindow(){
+        List<ClonedObject> listOfClonedPortals = cloningScript.getClonedPortalList();
+        foreach(ClonedObject portal in listOfClonedPortals){
+            if(portal.getClonePortal().tag == "Window"){
+                clonePortal.linkedPortal.setPlayerCam(portal.getClonePortal().getPortalCam());
+                //clonePortal.setPlayerCam(portal.getClonePortal().getPortalCam());
             }
         }
     }
