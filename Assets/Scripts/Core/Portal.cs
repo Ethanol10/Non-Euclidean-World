@@ -165,17 +165,7 @@ public class Portal : MonoBehaviour {
     // Called after PrePortalRender, and before PostPortalRender
     public void Render (List<Portal> portals) {     
         //If my linkedPortal is a clone, I need to get the clone's camera and take that image instead of the correct output clone.
-        // if(portals != null){
-        //     foreach(Portal portal in portals){
-        //         if(CameraUtility.VisibleFromCamera(screen, portal.linkedPortal.getPortalCam()) &&
-        //             !CameraUtility.VisibleFromCamera(screen, Camera.main)){
-                    
-        //             print("portalTriggered: " + portal.getPortalIdentifier());
-        //             print("linkedPortalConverted: " + linkedPortal.getPortalIdentifier());
-        //             linkedPortal.setPlayerCam(portal.linkedPortal.getPortalCam());
-        //         }
-        //     }
-        // }
+
         //Check if the portal is initally outside of the player's frustum 
         if(!isVisible && portals != null){
             //Check all portals for visible portals.
@@ -188,7 +178,7 @@ public class Portal : MonoBehaviour {
                         // If so, change the player camera of the portal that is being observed to the
                         // linked portal's portal cam.
                         linkedPortal.setPlayerCam(portal.linkedPortal.getPortalCam());
-                        if(gameObject.tag == "Window"){
+                        if(gameObject.tag == "Window" || cloningBox != null){
                             linkedPortal.clonePortal.setPlayerCam(portal.linkedPortal.getPortalCam());
                         }
                     }
